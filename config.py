@@ -17,7 +17,7 @@ APP_ID = int(os.environ.get("APP_ID", "36118156"))
 API_HASH = os.environ.get("API_HASH", "01b0374aa2da7214346ac6f166681cf2")
 
 #Your db channel Id
-CHANNEL_ID = int(os.environ.get("CHANNEL_ID", "-1003379960524"))
+CHANNEL_ID = int(os.environ.get("CHANNEL_ID", "-1003529228629"))
 
 #OWNER ID
 OWNER_ID = int(os.environ.get("OWNER_ID", "8491039481"))
@@ -47,7 +47,7 @@ except ValueError:
         raise Exception("Your Admins list does not contain valid integers.")
 
 #Force sub message 
-FORCE_MSG = os.environ.get("FORCE_SUB_MESSAGE", "Hello {first}\n\n<b> Hello {first} 👋 To use this bot, you must join our required channels. They share the best videos and important updates. Join below and tap Try Again once done.</b>")
+FORCE_MSG = os.environ.get("FORCE_SUB_MESSAGE", "Hello {first}\n\n<b> Hello {first} 👋 To use this bot, you must join our required channels. Join below and tap Try Again once done.</b>")
 
 #set your Custom Caption here, Keep None for Disable Custom Caption
 CUSTOM_CAPTION = os.environ.get("CUSTOM_CAPTION", None)
