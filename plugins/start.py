@@ -21,9 +21,6 @@ from database.database import add_user, del_user, full_userbase, present_user
 @Bot.on_message(filters.command('start') & filters.private & subscribed)
 async def start_command(client: Client, message: Message):
 
-    if await client.check_force_sub(message) != True:
-        return
-
     user_id = message.from_user.id
     if not await present_user(user_id):
         try:
@@ -90,7 +87,6 @@ async def start_command(client: Client, message: Message):
             asyncio.create_task(delete_file(track_msgs, client, delete_msg))
         return
 
-    # NORMAL START
     markup = InlineKeyboardMarkup(
         [[
             InlineKeyboardButton("😊 About Me", callback_data="about"),
@@ -122,6 +118,7 @@ async def start_command(client: Client, message: Message):
             reply_markup=markup
         )
 
+
 # -------------------- START (NOT SUBSCRIBED) --------------------
 @Bot.on_message(filters.command('start') & filters.private & ~subscribed)
 async def not_joined(client: Client, message: Message):
@@ -134,7 +131,7 @@ async def not_joined(client: Client, message: Message):
     if FORCE_SUB_CHANNEL:
         try:
             member = await client.get_chat_member(FORCE_SUB_CHANNEL, user_id)
-            if member.status in ("left", "kicked"):
+            if member.status not in ("member", "administrator", "owner"):
                 raise Exception
         except:
             join_buttons.append(
@@ -145,28 +142,26 @@ async def not_joined(client: Client, message: Message):
     if FORCE_SUB_CHANNEL_2:
         try:
             member = await client.get_chat_member(FORCE_SUB_CHANNEL_2, user_id)
-            if member.status in ("left", "kicked"):
+            if member.status not in ("member", "administrator", "owner"):
                 raise Exception
         except:
             join_buttons.append(
                 InlineKeyboardButton("Join Channel 2", url=client.invitelink2)
             )
 
-    # 🚨 IMPORTANT: if user joined BOTH → silently re-enter start
+    # If user joined BOTH channels → re-enter start
     if not join_buttons:
         await start_command(client, message)
         return
 
-    # Add join row
     buttons.append(join_buttons)
 
-    # -------- TRY AGAIN --------
     payload = message.command[1] if len(message.command) > 1 else "retry"
     try_again_url = f"https://t.me/{client.username}?start={payload}"
 
-    buttons.append([
-        InlineKeyboardButton("🔄 Try Again", url=try_again_url)
-    ])
+    buttons.append(
+        [InlineKeyboardButton("🔄 Try Again", url=try_again_url)]
+    )
 
     await message.reply(
         FORCE_MSG.format(
@@ -180,6 +175,7 @@ async def not_joined(client: Client, message: Message):
         quote=True,
         disable_web_page_preview=True
     )
+
 
 # -------------------- USERS --------------------
 @Bot.on_message(filters.command('users') & filters.private & filters.user(ADMINS))
