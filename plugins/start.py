@@ -122,103 +122,61 @@ async def start_command(client: Client, message: Message):
             reply_markup=markup
         )
 
-
 # -------------------- START (NOT SUBSCRIBED) --------------------
-@Bot.on_message(filters.command("start") & filters.private)
-async def force_sub_handler(client: Client, message: Message):
+@Bot.on_message(filters.command('start') & filters.private)
+async def not_joined(client: Client, message: Message):
 
+    buttons = []
+    join_buttons = []
     user_id = message.from_user.id
-    join_buttons = []
 
-    # CHANNEL 1
+    # -------- CHECK CHANNEL 1 --------
     if FORCE_SUB_CHANNEL:
         try:
-            member = await client.get_chat_member(FORCE_SUB_CHANNEL, user_id)
-            if member.status in ("left", "kicked"):
-                raise Exception
+            await client.get_chat_member(FORCE_SUB_CHANNEL, user_id)
         except Exception:
+            # user NOT joined channel 1
             join_buttons.append(
-                InlineKeyboardButton("📢 Join Channel 1", url=client.invitelink)
+                InlineKeyboardButton("Join Channel 1", url=client.invitelink)
             )
 
-    # CHANNEL 2
+    # -------- CHECK CHANNEL 2 --------
     if FORCE_SUB_CHANNEL_2:
         try:
-            member = await client.get_chat_member(FORCE_SUB_CHANNEL_2, user_id)
-            if member.status in ("left", "kicked"):
-                raise Exception
+            await client.get_chat_member(FORCE_SUB_CHANNEL_2, user_id)
         except Exception:
+            # user NOT joined channel 2
             join_buttons.append(
-                InlineKeyboardButton("📢 Join Channel 2", url=client.invitelink2)
+                InlineKeyboardButton("Join Channel 2", url=client.invitelink2)
             )
 
+    # Add join buttons if needed
     if join_buttons:
-        buttons = [
-            join_buttons,
-            [InlineKeyboardButton("🔄 Try Again", callback_data="force_retry")]
-        ]
+        buttons.append(join_buttons)
 
-        await message.reply_text(
-            FORCE_MSG.format(
-                first=message.from_user.first_name,
-                last=message.from_user.last_name,
-                username=f"@{message.from_user.username}" if message.from_user.username else None,
-                mention=message.from_user.mention,
-                id=user_id
-            ),
-            reply_markup=InlineKeyboardMarkup(buttons),
-            quote=True,
-            disable_web_page_preview=True
-        )
-        return
+    # -------- TRY AGAIN (ALWAYS) --------
+    if len(message.command) > 1:
+        # preserve deep-link payload
+        try_again_url = f"https://t.me/{client.username}?start={message.command[1]}"
+    else:
+        try_again_url = f"https://t.me/{client.username}?start=retry"
 
-    await start_command(client, message)
+    buttons.append(
+        [InlineKeyboardButton("🔄 Try Again", url=try_again_url)]
+    )
 
-
-# -------------------- FORCE SUB RETRY CALLBACK --------------------
-@Bot.on_callback_query(filters.regex("^force_retry$"))
-async def force_retry_callback(client: Client, query):
-
-    user_id = query.from_user.id
-    join_buttons = []
-
-    # CHANNEL 1
-    if FORCE_SUB_CHANNEL:
-        try:
-            member = await client.get_chat_member(FORCE_SUB_CHANNEL, user_id)
-            if member.status in ("left", "kicked"):
-                raise Exception
-        except Exception:
-            join_buttons.append(
-                InlineKeyboardButton("📢 Join Channel 1", url=client.invitelink)
-            )
-
-    # CHANNEL 2
-    if FORCE_SUB_CHANNEL_2:
-        try:
-            member = await client.get_chat_member(FORCE_SUB_CHANNEL_2, user_id)
-            if member.status in ("left", "kicked"):
-                raise Exception
-        except Exception:
-            join_buttons.append(
-                InlineKeyboardButton("📢 Join Channel 2", url=client.invitelink2)
-            )
-
-    if join_buttons:
-        await query.message.edit_reply_markup(
-            InlineKeyboardMarkup([
-                join_buttons,
-                [InlineKeyboardButton("🔄 Try Again", callback_data="force_retry")]
-            ])
-        )
-        await query.answer("Join required channels first", show_alert=False)
-        return
-
-    await query.message.delete()
-    fake_msg = query.message
-    fake_msg.text = "/start"
-    await start_command(client, fake_msg)
-
+    await message.reply(
+        FORCE_MSG.format(
+            first=message.from_user.first_name,
+            last=message.from_user.last_name,
+            username=None if not message.from_user.username else '@' + message.from_user.username,
+            mention=message.from_user.mention,
+            id=message.from_user.id
+        ),
+        reply_markup=InlineKeyboardMarkup(buttons),
+        quote=True,
+        disable_web_page_preview=True
+    )
 
 # -------------------- USERS --------------------
 @Bot.on_message(filters.command('users') & filters.private & filters.user(ADMINS))
