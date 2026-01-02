@@ -126,45 +126,47 @@ async def start_command(client: Client, message: Message):
 @Bot.on_message(filters.command('start') & filters.private & ~subscribed)
 async def not_joined(client: Client, message: Message):
 
-    buttons = []
-    join_buttons = []
     user_id = message.from_user.id
+    join_buttons = []
+    buttons = []
 
-    # -------- CHECK CHANNEL 1 --------
+    # -------- CHANNEL 1 --------
     if FORCE_SUB_CHANNEL:
         try:
             member = await client.get_chat_member(FORCE_SUB_CHANNEL, user_id)
-            if member.status not in ("member", "administrator", "owner"):
+            if member.status in ("left", "kicked"):
                 raise Exception
-        except Exception:
+        except:
             join_buttons.append(
                 InlineKeyboardButton("Join Channel 1", url=client.invitelink)
             )
 
-    # -------- CHECK CHANNEL 2 --------
+    # -------- CHANNEL 2 --------
     if FORCE_SUB_CHANNEL_2:
         try:
             member = await client.get_chat_member(FORCE_SUB_CHANNEL_2, user_id)
-            if member.status not in ("member", "administrator", "owner"):
+            if member.status in ("left", "kicked"):
                 raise Exception
-        except Exception:
+        except:
             join_buttons.append(
                 InlineKeyboardButton("Join Channel 2", url=client.invitelink2)
             )
 
-    # Add join buttons ONLY if required
-    if join_buttons:
-        buttons.append(join_buttons)
+    # 🚨 IMPORTANT: if user joined BOTH → silently re-enter start
+    if not join_buttons:
+        await start_command(client, message)
+        return
 
-    # -------- TRY AGAIN (ALWAYS SHOWN) --------
-    if len(message.command) > 1:
-        try_again_url = f"https://t.me/{client.username}?start={message.command[1]}"
-    else:
-        try_again_url = f"https://t.me/{client.username}?start=retry"
+    # Add join row
+    buttons.append(join_buttons)
 
-    buttons.append(
-        [InlineKeyboardButton("🔄 Try Again", url=try_again_url)]
-    )
+    # -------- TRY AGAIN --------
+    payload = message.command[1] if len(message.command) > 1 else "retry"
+    try_again_url = f"https://t.me/{client.username}?start={payload}"
+
+    buttons.append([
+        InlineKeyboardButton("🔄 Try Again", url=try_again_url)
+    ])
 
     await message.reply(
         FORCE_MSG.format(
