@@ -13,26 +13,26 @@ from config import (
     START_PIC, AUTO_DELETE_TIME, AUTO_DELETE_MSG,
     FORCE_SUB_CHANNEL, FORCE_SUB_CHANNEL_2
 )
-from helper_func import subscribed, decode, get_messages, delete_file
+from helper_func import (
+    check_subscribed, decode, get_messages, delete_file
+)
 from database.database import add_user, del_user, full_userbase, present_user
 
 
 # ------------------------------------------------------------------
-# SINGLE START ROUTER (NO DUPLICATES, NO FILTER HACKS)
+# SINGLE START ROUTER
 # ------------------------------------------------------------------
 @Bot.on_message(filters.command("start") & filters.private)
 async def start_router(client: Client, message: Message):
 
     user_id = message.from_user.id
 
-    # -------------------------------------------------
-    # FORCE SUB CHECK (FIRST & FINAL)
-    # -------------------------------------------------
-    if not await subscribed(None, client, message):
+    # ---------------- FORCE SUB CHECK ----------------
+    if not await check_subscribed(client, message):
+
         buttons = []
         join_buttons = []
 
-        # Channel 1
         if FORCE_SUB_CHANNEL:
             try:
                 await client.get_chat_member(FORCE_SUB_CHANNEL, user_id)
@@ -41,7 +41,6 @@ async def start_router(client: Client, message: Message):
                     InlineKeyboardButton("Join Channel 1", url=client.invitelink)
                 )
 
-        # Channel 2
         if FORCE_SUB_CHANNEL_2:
             try:
                 await client.get_chat_member(FORCE_SUB_CHANNEL_2, user_id)
@@ -53,7 +52,6 @@ async def start_router(client: Client, message: Message):
         if join_buttons:
             buttons.append(join_buttons)
 
-        # Try Again (preserve payload)
         if len(message.command) > 1:
             retry_url = f"https://t.me/{client.username}?start={message.command[1]}"
         else:
@@ -75,11 +73,9 @@ async def start_router(client: Client, message: Message):
             quote=True,
             disable_web_page_preview=True
         )
-        return  # ⬅️ ABSOLUTELY REQUIRED
+        return   # 🔴 CRITICAL
 
-    # -------------------------------------------------
-    # USER IS SUBSCRIBED → NORMAL FLOW
-    # -------------------------------------------------
+    # ---------------- USER IS SUBSCRIBED ----------------
     if not await present_user(user_id):
         try:
             await add_user(user_id)
@@ -88,13 +84,9 @@ async def start_router(client: Client, message: Message):
 
     text = message.text
 
-    # ---------------- DEEP LINK (FILES / BATCH) ----------------
+    # ---------------- DEEP LINK ----------------
     if len(text) > 7:
-        try:
-            base64_string = text.split(" ", 1)[1]
-        except:
-            return
-
+        base64_string = text.split(" ", 1)[1]
         string = await decode(base64_string)
         argument = string.split("-")
 
@@ -102,11 +94,8 @@ async def start_router(client: Client, message: Message):
             start = int(int(argument[1]) / abs(client.db_channel.id))
             end = int(int(argument[2]) / abs(client.db_channel.id))
             ids = range(start, end + 1) if start <= end else range(start, end - 1, -1)
-
-        elif len(argument) == 2:
-            ids = [int(int(argument[1]) / abs(client.db_channel.id))]
         else:
-            return
+            ids = [int(int(argument[1]) / abs(client.db_channel.id))]
 
         temp = await message.reply("Please wait...")
         messages = await get_messages(client, ids)
@@ -126,20 +115,18 @@ async def start_router(client: Client, message: Message):
 
             reply_markup = msg.reply_markup if DISABLE_CHANNEL_BUTTON else None
 
-            try:
-                copied = await msg.copy(
-                    chat_id=message.chat.id,
-                    caption=caption,
-                    parse_mode=ParseMode.HTML,
-                    reply_markup=reply_markup,
-                    protect_content=PROTECT_CONTENT
-                )
-                if AUTO_DELETE_TIME:
-                    track_msgs.append(copied)
-                await asyncio.sleep(0.4)
+            copied = await msg.copy(
+                chat_id=message.chat.id,
+                caption=caption,
+                parse_mode=ParseMode.HTML,
+                reply_markup=reply_markup,
+                protect_content=PROTECT_CONTENT
+            )
 
-            except FloodWait as e:
-                await asyncio.sleep(e.value)
+            if AUTO_DELETE_TIME:
+                track_msgs.append(copied)
+
+            await asyncio.sleep(0.4)
 
         if track_msgs:
             delete_msg = await client.send_message(
@@ -150,7 +137,7 @@ async def start_router(client: Client, message: Message):
 
         return
 
-    # ---------------- NORMAL /START ----------------
+    # ---------------- NORMAL START ----------------
     markup = InlineKeyboardMarkup(
         [[
             InlineKeyboardButton("😊 About Me", callback_data="about"),
@@ -226,6 +213,7 @@ async def send_text(client: Bot, message: Message):
             deleted += 1
         except:
             unsuccessful += 1
+
         total += 1
         await asyncio.sleep(0.1)
 

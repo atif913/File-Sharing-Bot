@@ -10,10 +10,9 @@ from config import FORCE_SUB_CHANNEL, ADMINS, AUTO_DELETE_TIME, AUTO_DEL_SUCCESS
 from pyrogram.errors.exceptions.bad_request_400 import UserNotParticipant
 from pyrogram.errors import FloodWait
 
-async def is_subscribed(_, client, message):
+async def check_subscribed(client, message):
     user_id = message.from_user.id
 
-    # Admins bypass force sub
     if user_id in ADMINS:
         return True
 
@@ -25,7 +24,6 @@ async def is_subscribed(_, client, message):
             await client.get_chat_member(FORCE_SUB_CHANNEL_2, user_id)
 
         return True
-
     except:
         return False
 
