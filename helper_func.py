@@ -1,4 +1,4 @@
-# (©)Codexbotz
+# (©)CodeXBotz
 
 import base64
 import re
@@ -12,8 +12,9 @@ from config import (
     AUTO_DEL_SUCCESS_MSG
 )
 
+
 # -------------------------------------------------
-# MANUAL FORCE-SUB CHECK (USED IN start.py)
+# FORCE SUB CHECK (MANUAL)
 # -------------------------------------------------
 async def check_subscribed(client, message):
     user_id = message.from_user.id
@@ -110,25 +111,18 @@ async def delete_file(messages, client, process):
 
     await process.edit_text(AUTO_DEL_SUCCESS_MSG)
 
+
 def get_readable_time(seconds: int) -> str:
     count = 0
     time_list = []
-    time_suffix_list = ["s", "m", "h", "days"]
+    suffix = ["s", "m", "h", "days"]
 
     while count < 4:
         count += 1
         remainder, result = divmod(seconds, 60) if count < 3 else divmod(seconds, 24)
         if seconds == 0 and remainder == 0:
             break
-        time_list.append(int(result))
+        time_list.append(f"{int(result)}{suffix[count-1]}")
         seconds = int(remainder)
-
-    time_list = [
-        f"{time_list[i]}{time_suffix_list[i]}"
-        for i in range(len(time_list))
-    ]
-
-    if len(time_list) == 4:
-        time_list.pop()
 
     return ":".join(reversed(time_list))
