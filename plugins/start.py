@@ -18,7 +18,7 @@ from database.database import add_user, del_user, full_userbase, present_user
 
 
 # -------------------- START (SUBSCRIBED) --------------------
-@Bot.on_message(filters.command('start') & filters.private & subscribed)
+@Bot.on_message(filters.command('start') & filters.private & ~subscribed)
 async def start_command(client: Client, message: Message):
 
     if await client.check_force_sub(message) != True:
